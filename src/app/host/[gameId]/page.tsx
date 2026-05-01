@@ -87,13 +87,13 @@ export default function HostPage() {
   }, [phase, timeLeft]);
 
   const handleStartGame = useCallback(() => {
-    socket.emit('start-game', (_res: { success: boolean; finished?: boolean }) => {
+    socket.emit('start-game', () => {
       // handled by events
     });
   }, [socket]);
 
   const handleNextQuestion = useCallback(() => {
-    socket.emit('start-game', (_res: { success: boolean; finished?: boolean }) => {
+    socket.emit('start-game', () => {
       // handled by events
     });
   }, [socket]);
@@ -292,9 +292,9 @@ export default function HostPage() {
               style={{ animationDelay: `${i * 0.1}s` }}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-4 ${i === 0 ? 'bg-yellow-400 text-yellow-900' :
-                  i === 1 ? 'bg-gray-300 text-gray-700' :
-                    i === 2 ? 'bg-orange-400 text-orange-900' :
-                      'bg-white/20 text-white'
+                i === 1 ? 'bg-gray-300 text-gray-700' :
+                  i === 2 ? 'bg-orange-400 text-orange-900' :
+                    'bg-white/20 text-white'
                 }`}>
                 {entry.rank}
               </div>
@@ -337,9 +337,9 @@ export default function HostPage() {
               style={{ animationDelay: `${i * 0.1}s` }}
             >
               <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-4 ${i === 0 ? 'bg-yellow-400 text-yellow-900' :
-                  i === 1 ? 'bg-gray-300 text-gray-700' :
-                    i === 2 ? 'bg-orange-400 text-orange-900' :
-                      'bg-white/20 text-white'
+                i === 1 ? 'bg-gray-300 text-gray-700' :
+                  i === 2 ? 'bg-orange-400 text-orange-900' :
+                    'bg-white/20 text-white'
                 }`}>
                 {entry.rank}
               </div>
