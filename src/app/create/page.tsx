@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useSocket } from '@/hooks/useSocket';
 import { QuizQuestion, SavedQuiz } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import Link from 'next/link';
 
 const emptyQuestion = (): QuizQuestion => ({
   id: uuidv4(),
@@ -20,6 +21,7 @@ function CreateQuizContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
   const { status } = useSession();
+  const isLoggedIn = status === 'authenticated';
   const socket = useSocket();
 
   const [title, setTitle] = useState('');
@@ -30,12 +32,6 @@ function CreateQuizContent() {
   const [savedId, setSavedId] = useState<string | null>(editId);
   const [saveMessage, setSaveMessage] = useState('');
   const [loadingQuiz, setLoadingQuiz] = useState(!!editId);
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.replace(`/login?callbackUrl=${encodeURIComponent('/create' + (editId ? `?edit=${editId}` : ''))}`);
-    }
-  }, [status, router, editId]);
 
   // Load existing quiz if editing
   useEffect(() => {
@@ -244,6 +240,15 @@ function CreateQuizContent() {
               onChange={(e) => setTitle(e.target.value)}
               className="w-full bg-white/10 text-white text-2xl font-bold placeholder-white/40 py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30"
             />
+            {!isLoggedIn && !editId && (
+              <div className="mt-3 bg-yellow-500/20 border border-yellow-500/40 rounded-lg p-3 text-sm text-yellow-200">
+                🌍 Denne quizzen blir <strong>offentlig</strong> og synlig for alle.{' '}
+                <Link href="/login?callbackUrl=/create" className="underline hover:text-white">
+                  Logg inn
+                </Link>{' '}
+                for å lagre private quizzer.
+              </div>
+            )}
           </div>
 
           {questions.map((q, qIndex) => (
@@ -338,7 +343,7 @@ function CreateQuizContent() {
               disabled={saving || starting}
               className="flex-1 bg-white/10 hover:bg-white/20 disabled:bg-white/5 text-white font-bold py-4 rounded-xl text-lg transition-colors border-2 border-white/20"
             >
-              {saving ? 'Lagrer...' : savedId ? 'Lagre endringer 💾' : 'Lagre quiz 💾'}
+              {saving ? 'Lagrer...' : savedId ? 'Lagre endringer 💾' : isLoggedIn ? 'Lagre quiz 💾' : 'Lagre offentlig quiz 🌍'}
             </button>
             <button
               type="button"

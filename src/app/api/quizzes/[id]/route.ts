@@ -34,16 +34,20 @@ async function getAuthUserId(): Promise<string | null> {
   return (session.user as { id?: string }).id || null;
 }
 
-// GET /api/quizzes/[id] — get a single quiz
+// GET /api/quizzes/[id] — get a single quiz (public or own)
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = await getAuthUserId();
-  if (!userId) {
-    return NextResponse.json({ error: 'Ikke innlogget.' }, { status: 401 });
+  const quizzes = readQuizzes();
+  const quiz = quizzes.find((q) => q.id === params.id);
+  if (!quiz) {
+    return NextResponse.json({ error: 'Quiz ikke funnet.' }, { status: 404 });
   }
 
-  const quizzes = readQuizzes();
-  const quiz = quizzes.find((q) => q.id === params.id && q.userId === userId);
-  if (!quiz) {
+  if (quiz.isPublic) {
+    return NextResponse.json(quiz);
+  }
+
+  const userId = await getAuthUserId();
+  if (!userId || quiz.userId !== userId) {
     return NextResponse.json({ error: 'Quiz ikke funnet.' }, { status: 404 });
   }
   return NextResponse.json(quiz);

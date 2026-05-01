@@ -13,8 +13,9 @@ export interface Quiz {
 
 export interface SavedQuiz {
   id: string;
-  userId: string;
+  userId?: string;
   userName?: string;
+  isPublic: boolean;
   title: string;
   questions: QuizQuestion[];
   createdAt: string;

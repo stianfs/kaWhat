@@ -21,14 +21,6 @@ export default function Home() {
     router.push(`/play/${trimmed}`);
   };
 
-  const handleHostAction = (path: string) => {
-    if (!session) {
-      router.push(`/login?callbackUrl=${encodeURIComponent(path)}`);
-    } else {
-      router.push(path);
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#46178f] px-4 relative">
       {/* Auth corner */}
@@ -96,17 +88,25 @@ export default function Home() {
 
       <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
         <button
-          onClick={() => handleHostAction('/create')}
+          onClick={() => router.push('/create')}
           className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors border-2 border-white/30"
         >
           Opprett ny quiz
         </button>
         <button
-          onClick={() => handleHostAction('/library')}
+          onClick={() => router.push('/explore')}
           className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors border-2 border-white/30"
         >
-          Mine quizzer 📚
+          Utforsk quizzer 🌍
         </button>
+        {session && (
+          <button
+            onClick={() => router.push('/library')}
+            className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors border-2 border-white/30"
+          >
+            Mine quizzer 📚
+          </button>
+        )}
       </div>
     </div>
   );

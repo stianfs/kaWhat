@@ -29,28 +29,43 @@ function writeQuizzes(quizzes: SavedQuiz[]) {
   fs.writeFileSync(QUIZZES_FILE, JSON.stringify(quizzes, null, 2), 'utf-8');
 }
 
-// GET /api/quizzes — list quizzes for the logged-in user
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Ikke innlogget.' }, { status: 401 });
+// GET /api/quizzes?scope=public|mine&search=...
+export async function GET(req: NextRequest) {
+  const scope = req.nextUrl.searchParams.get('scope') || 'mine';
+  const search = req.nextUrl.searchParams.get('search')?.toLowerCase() || '';
+
+  const allQuizzes = readQuizzes();
+
+  let filtered: SavedQuiz[];
+  if (scope === 'public') {
+    filtered = allQuizzes.filter((q) => q.isPublic);
+  } else {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Ikke innlogget.' }, { status: 401 });
+    }
+    const userId = (session.user as { id?: string }).id;
+    filtered = allQuizzes.filter((q) => q.userId === userId);
   }
 
-  const userId = (session.user as { id?: string }).id;
-  const quizzes = readQuizzes().filter((q) => q.userId === userId);
-  quizzes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  return NextResponse.json(quizzes);
+  if (search) {
+    filtered = filtered.filter(
+      (q) =>
+        q.title.toLowerCase().includes(search) ||
+        q.questions.some((qu) => qu.question.toLowerCase().includes(search))
+    );
+  }
+
+  filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  return NextResponse.json(filtered);
 }
 
-// POST /api/quizzes — create a new saved quiz
+// POST /api/quizzes — create a new saved quiz (public if not logged in)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Ikke innlogget.' }, { status: 401 });
-  }
 
-  const userId = (session.user as { id?: string }).id!;
-  const userName = session.user.name || undefined;
+  const userId = session?.user ? (session.user as { id?: string }).id : undefined;
+  const userName = session?.user?.name || undefined;
 
   const body = await req.json();
   const { title, questions } = body;
@@ -59,11 +74,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Tittel og minst ett spørsmål er påkrevd.' }, { status: 400 });
   }
 
+  const isPublic = !userId || body.isPublic === true;
+
   const now = new Date().toISOString();
   const quiz: SavedQuiz = {
     id: uuidv4(),
     userId,
     userName,
+    isPublic,
     title,
     questions,
     createdAt: now,
