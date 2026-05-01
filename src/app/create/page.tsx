@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSocket } from '@/hooks/useSocket';
@@ -15,7 +15,7 @@ const emptyQuestion = (): QuizQuestion => ({
   timeLimit: 20,
 });
 
-export default function CreateQuizPage() {
+function CreateQuizContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
@@ -352,5 +352,13 @@ export default function CreateQuizPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CreateQuizPage() {
+  return (
+    <Suspense>
+      <CreateQuizContent />
+    </Suspense>
   );
 }
