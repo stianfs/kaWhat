@@ -8,7 +8,7 @@ import { SavedQuiz } from '@/lib/types';
 
 export default function LibraryPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const socket = useSocket();
   const [quizzes, setQuizzes] = useState<SavedQuiz[]>([]);
   const [loading, setLoading] = useState(true);

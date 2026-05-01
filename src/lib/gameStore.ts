@@ -1,4 +1,4 @@
-import { Game, Player, PlayerAnswer, Quiz, QuestionResultsData, LeaderboardEntry, AnswerResultData } from './types';
+import { Game, Player, Quiz, QuestionResultsData, LeaderboardEntry, AnswerResultData } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 const games = new Map<string, Game>();

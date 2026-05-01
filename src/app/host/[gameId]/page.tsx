@@ -87,19 +87,19 @@ export default function HostPage() {
   }, [phase, timeLeft]);
 
   const handleStartGame = useCallback(() => {
-    socket.emit('start-game', (res: { success: boolean; finished?: boolean }) => {
+    socket.emit('start-game', (_res: { success: boolean; finished?: boolean }) => {
       // handled by events
     });
   }, [socket]);
 
   const handleNextQuestion = useCallback(() => {
-    socket.emit('start-game', (res: { success: boolean; finished?: boolean }) => {
+    socket.emit('start-game', (_res: { success: boolean; finished?: boolean }) => {
       // handled by events
     });
   }, [socket]);
 
   const handleShowLeaderboard = useCallback(() => {
-    socket.emit('show-leaderboard', () => {});
+    socket.emit('show-leaderboard', () => { });
   }, [socket]);
 
   const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}/play/${pin}` : '';
@@ -236,9 +236,8 @@ export default function HostPage() {
               return (
                 <div
                   key={i}
-                  className={`${optionColors[i]} rounded-xl p-4 text-white relative overflow-hidden ${
-                    isCorrect ? 'ring-4 ring-white' : 'opacity-60'
-                  }`}
+                  className={`${optionColors[i]} rounded-xl p-4 text-white relative overflow-hidden ${isCorrect ? 'ring-4 ring-white' : 'opacity-60'
+                    }`}
                 >
                   <div className="flex items-center justify-between relative z-10">
                     <span className="font-bold">
@@ -292,12 +291,11 @@ export default function HostPage() {
               className="flex items-center bg-white/10 backdrop-blur rounded-xl p-4 mb-3 animate-slide-in"
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-4 ${
-                i === 0 ? 'bg-yellow-400 text-yellow-900' :
-                i === 1 ? 'bg-gray-300 text-gray-700' :
-                i === 2 ? 'bg-orange-400 text-orange-900' :
-                'bg-white/20 text-white'
-              }`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-4 ${i === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  i === 1 ? 'bg-gray-300 text-gray-700' :
+                    i === 2 ? 'bg-orange-400 text-orange-900' :
+                      'bg-white/20 text-white'
+                }`}>
                 {entry.rank}
               </div>
               <div className="flex-1 text-white font-semibold text-lg">{entry.nickname}</div>
@@ -338,12 +336,11 @@ export default function HostPage() {
               className="flex items-center bg-white/10 backdrop-blur rounded-xl p-4 mb-3 animate-slide-in"
               style={{ animationDelay: `${i * 0.1}s` }}
             >
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-4 ${
-                i === 0 ? 'bg-yellow-400 text-yellow-900' :
-                i === 1 ? 'bg-gray-300 text-gray-700' :
-                i === 2 ? 'bg-orange-400 text-orange-900' :
-                'bg-white/20 text-white'
-              }`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-4 ${i === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  i === 1 ? 'bg-gray-300 text-gray-700' :
+                    i === 2 ? 'bg-orange-400 text-orange-900' :
+                      'bg-white/20 text-white'
+                }`}>
                 {entry.rank}
               </div>
               <div className="flex-1 text-white font-semibold text-lg">{entry.nickname}</div>

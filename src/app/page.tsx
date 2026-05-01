@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 
 export default function Home() {
@@ -35,10 +36,12 @@ export default function Home() {
         {status === 'loading' ? null : session ? (
           <div className="flex items-center gap-3">
             {session.user?.image && (
-              <img
+              <Image
                 src={session.user.image}
                 alt=""
-                className="w-8 h-8 rounded-full border-2 border-white/30"
+                width={32}
+                height={32}
+                className="rounded-full border-2 border-white/30"
               />
             )}
             <span className="text-white/80 text-sm hidden sm:inline">
