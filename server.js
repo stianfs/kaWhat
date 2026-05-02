@@ -172,6 +172,23 @@ app.prepare().then(() => {
     maxHttpBufferSize: 1e6,
   });
 
+  const { createAdapter } = require('@socket.io/redis-adapter');
+  const { createClient } = require('redis');
+
+  // Only initialize Redis adapter if REDIS_URL is set
+  if (process.env.REDIS_URL) {
+    const pubClient = createClient({ url: process.env.REDIS_URL });
+    const subClient = pubClient.duplicate();
+
+    Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('Socket.io Redis adapter initialized');
+    }).catch(err => {
+      console.error('Failed to connect to Redis:', err);
+      process.exit(1);
+    });
+  }
+
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
