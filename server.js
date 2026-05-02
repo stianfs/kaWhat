@@ -29,6 +29,7 @@ function createGame(quiz) {
     id: uuidv4(),
     pin,
     quiz,
+    hostSocketId: null,        // current host socket id
     players: new Map(),       // visibleId -> player (visibleId = current socketId)
     nickToPlayer: new Map(),   // lowercase nickname -> player reference
     state: 'lobby',
@@ -178,6 +179,7 @@ app.prepare().then(() => {
     socket.on('create-game', (quiz, callback) => {
       try {
         const game = createGame(quiz);
+        game.hostSocketId = socket.id;
         socket.join(game.pin);
         socketGameMap.set(socket.id, { pin: game.pin, role: 'host' });
         callback({ success: true, gameId: game.id, pin: game.pin });
@@ -353,6 +355,62 @@ app.prepare().then(() => {
       if (callback) callback({ success: true });
     });
 
+    // Host reconnects after refresh
+    socket.on('rejoin-host', ({ pin }, callback) => {
+      try {
+        const game = getGameByPin(pin);
+        if (!game) {
+          if (callback) callback({ success: false, error: 'Spill ikke funnet.' });
+          return;
+        }
+
+        // Reclaim host role
+        game.hostSocketId = socket.id;
+        socket.join(pin);
+        socketGameMap.set(socket.id, { pin, role: 'host' });
+
+        // Build full state snapshot
+        const state = {
+          phase: game.state,
+          players: getPlayerNicknames(game),
+          playerCount: getAllPlayers(game).length,
+          currentQuestionIndex: game.currentQuestionIndex,
+          totalQuestions: game.quiz.questions.length,
+        };
+
+        if (game.state === 'question' && game.currentQuestionIndex >= 0) {
+          const q = game.quiz.questions[game.currentQuestionIndex];
+          const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+          const remaining = Math.max(0, q.timeLimit - elapsed);
+          state.question = {
+            index: game.currentQuestionIndex,
+            total: game.quiz.questions.length,
+            question: q.question,
+            options: q.options,
+            timeLimit: remaining,
+          };
+          state.answerCount = { count: game.answers.size, total: getConnectedPlayers(game).length };
+        } else if (game.state === 'results' && game.currentQuestionIndex >= 0) {
+          const q = game.quiz.questions[game.currentQuestionIndex];
+          state.question = {
+            index: game.currentQuestionIndex,
+            total: game.quiz.questions.length,
+            question: q.question,
+            options: q.options,
+            timeLimit: q.timeLimit,
+          };
+          state.questionResults = getQuestionResults(game);
+        } else if (game.state === 'leaderboard' || game.state === 'finished') {
+          state.leaderboard = getLeaderboard(game);
+        }
+
+        if (callback) callback({ success: true, state });
+        console.log(`Host reconnected to game PIN=${pin}, phase=${game.state}`);
+      } catch (err) {
+        if (callback) callback({ success: false, error: 'Kunne ikke koble til spillet igjen.' });
+      }
+    });
+
     // Host requests leaderboard
     socket.on('show-leaderboard', (callback) => {
       const mapping = socketGameMap.get(socket.id);
@@ -366,7 +424,7 @@ app.prepare().then(() => {
       if (callback) callback({ success: true });
     });
 
-    // Disconnect — mark player as disconnected, don't remove
+    // Disconnect — mark player as disconnected, don't remove. Keep game alive for host reconnect.
     socket.on('disconnect', () => {
       const mapping = socketGameMap.get(socket.id);
       if (mapping) {
@@ -382,6 +440,8 @@ app.prepare().then(() => {
               players: getPlayerNicknames(game),
               count: getAllPlayers(game).length,
             });
+          } else if (mapping.role === 'host') {
+            console.log(`Host disconnected from PIN=${mapping.pin} (game preserved for reconnect)`);
           }
         }
         socketGameMap.delete(socket.id);

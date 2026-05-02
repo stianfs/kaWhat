@@ -29,6 +29,40 @@ export default function HostPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [timeLeft, setTimeLeft] = useState(0);
 
+  // Try to rejoin as host on mount (handles page refresh)
+  useEffect(() => {
+    socket.emit('rejoin-host', { pin }, (res: {
+      success: boolean; state?: {
+        phase: GamePhase;
+        players: string[];
+        playerCount: number;
+        question?: QuestionData;
+        answerCount?: { count: number; total: number };
+        questionResults?: QuestionResultsData;
+        leaderboard?: LeaderboardEntry[];
+      }
+    }) => {
+      if (res.success && res.state) {
+        setPlayers(res.state.players || []);
+        setPhase(res.state.phase);
+        if (res.state.question) {
+          setCurrentQuestion(res.state.question);
+          setTimeLeft(res.state.question.timeLimit);
+        }
+        if (res.state.answerCount) {
+          setAnswerCount(res.state.answerCount);
+        }
+        if (res.state.questionResults) {
+          setQuestionResults(res.state.questionResults);
+        }
+        if (res.state.leaderboard) {
+          setLeaderboard(res.state.leaderboard);
+        }
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     socket.on('player-joined', (data: { players: string[]; count: number }) => {
       setPlayers(data.players);
