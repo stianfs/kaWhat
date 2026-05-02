@@ -81,7 +81,7 @@ export default function PlayPage() {
       socket.off('leaderboard');
       socket.off('game-over');
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket]);
 
   // Countdown timer
@@ -108,9 +108,14 @@ export default function PlayPage() {
     setLoading(true);
     setError('');
 
-    socket.emit('join-game', { pin, nickname: nickname.trim() }, (res: { success: boolean; gameId?: string; error?: string }) => {
+    socket.emit('join-game', { pin, nickname: nickname.trim() }, (res: { success: boolean; gameId?: string; error?: string; reconnected?: boolean; state?: string }) => {
       if (res.success) {
-        setPhase('lobby');
+        if (res.reconnected) {
+          // Reconnected mid-game — socket events will set the correct phase
+          setPhase('lobby'); // temporary, will be updated by incoming game state events
+        } else {
+          setPhase('lobby');
+        }
       } else {
         setError(res.error || 'Kunne ikke bli med');
       }
@@ -123,7 +128,7 @@ export default function PlayPage() {
     setSelectedAnswer(answerIndex);
     setPhase('answered');
 
-    socket.emit('answer', { answerIndex }, () => {});
+    socket.emit('answer', { answerIndex }, () => { });
   }, [socket, selectedAnswer]);
 
   const optionColors = ['bg-[#e21b3c]', 'bg-[#1368ce]', 'bg-[#d89e00]', 'bg-[#26890c]'];
@@ -299,16 +304,14 @@ export default function PlayPage() {
           {leaderboard.slice(0, 5).map((entry, i) => (
             <div
               key={i}
-              className={`flex items-center rounded-xl p-3 mb-2 ${
-                entry.nickname === nickname ? 'bg-yellow-400/20 border border-yellow-400/50' : 'bg-white/10'
-              }`}
+              className={`flex items-center rounded-xl p-3 mb-2 ${entry.nickname === nickname ? 'bg-yellow-400/20 border border-yellow-400/50' : 'bg-white/10'
+                }`}
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 ${
-                i === 0 ? 'bg-yellow-400 text-yellow-900' :
-                i === 1 ? 'bg-gray-300 text-gray-700' :
-                i === 2 ? 'bg-orange-400 text-orange-900' :
-                'bg-white/20 text-white'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-3 ${i === 0 ? 'bg-yellow-400 text-yellow-900' :
+                  i === 1 ? 'bg-gray-300 text-gray-700' :
+                    i === 2 ? 'bg-orange-400 text-orange-900' :
+                      'bg-white/20 text-white'
+                }`}>
                 {entry.rank}
               </div>
               <div className="flex-1 text-white font-semibold">{entry.nickname}</div>

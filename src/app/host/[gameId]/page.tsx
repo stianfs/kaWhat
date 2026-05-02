@@ -104,6 +104,13 @@ export default function HostPage() {
 
   const joinUrl = typeof window !== 'undefined' ? `${window.location.origin}/play/${pin}` : '';
 
+  const PinBadge = () => (
+    <div className="fixed top-3 left-3 z-50 bg-black/40 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
+      <span className="text-white/50 text-xs">PIN:</span>
+      <span className="text-white font-bold text-sm tracking-wider">{pin}</span>
+    </div>
+  );
+
   const optionColors = ['bg-[#e21b3c]', 'bg-[#1368ce]', 'bg-[#d89e00]', 'bg-[#26890c]'];
   const optionShapes = ['▲', '◆', '●', '■'];
 
@@ -171,6 +178,7 @@ export default function HostPage() {
     const timerPercent = currentQuestion.timeLimit > 0 ? (timeLeft / currentQuestion.timeLimit) * 100 : 0;
     return (
       <div className="min-h-screen bg-[#46178f] flex flex-col">
+        <PinBadge />
         {/* Top bar */}
         <div className="flex items-center justify-between px-6 py-4">
           <div className="text-white/60 text-sm">
@@ -222,6 +230,7 @@ export default function HostPage() {
     const maxCount = Math.max(...questionResults.answerCounts, 1);
     return (
       <div className="min-h-screen bg-[#46178f] flex flex-col items-center justify-center px-4">
+        <PinBadge />
         <h2 className="text-3xl font-bold text-white mb-2">{currentQuestion.question}</h2>
         <p className="text-white/60 mb-8">
           {questionResults.totalAnswers} av {questionResults.totalPlayers} svarte
@@ -282,6 +291,7 @@ export default function HostPage() {
   if (phase === 'leaderboard') {
     return (
       <div className="min-h-screen bg-[#46178f] flex flex-col items-center justify-center px-4">
+        <PinBadge />
         <h2 className="text-4xl font-extrabold text-white mb-8">Poengtavle</h2>
 
         <div className="w-full max-w-lg">
@@ -319,6 +329,7 @@ export default function HostPage() {
     const winner = leaderboard[0];
     return (
       <div className="min-h-screen bg-[#46178f] flex flex-col items-center justify-center px-4">
+        <PinBadge />
         <div className="text-center mb-8 animate-fade-in-up">
           <p className="text-6xl mb-4">🏆</p>
           <h2 className="text-4xl font-extrabold text-white mb-2">Quizzen er ferdig!</h2>

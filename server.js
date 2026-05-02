@@ -10,7 +10,7 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
-// In-memory game store (duplicated logic from gameStore for server-side JS)
+// In-memory game store
 const { v4: uuidv4 } = require('uuid');
 
 const games = new Map();
@@ -29,10 +29,11 @@ function createGame(quiz) {
     id: uuidv4(),
     pin,
     quiz,
-    players: new Map(),
+    players: new Map(),       // visibleId -> player (visibleId = current socketId)
+    nickToPlayer: new Map(),   // lowercase nickname -> player reference
     state: 'lobby',
     currentQuestionIndex: -1,
-    answers: new Map(),
+    answers: new Map(),        // visibleId -> answer
     questionStartTime: 0,
     timers: {},
   };
@@ -44,30 +45,50 @@ function getGameByPin(pin) {
   return games.get(pin);
 }
 
-function getGameById(id) {
-  for (const game of games.values()) {
-    if (game.id === id) return game;
-  }
-  return undefined;
+function addPlayer(game, socketId, nickname) {
+  if (game.state !== 'lobby') return null;
+  const nickLower = nickname.toLowerCase();
+  if (game.nickToPlayer.has(nickLower)) return null;
+  const player = { id: socketId, nickname, score: 0, streak: 0, connected: true };
+  game.players.set(socketId, player);
+  game.nickToPlayer.set(nickLower, player);
+  return player;
 }
 
-function addPlayer(pin, socketId, nickname) {
-  const game = games.get(pin);
-  if (!game || game.state !== 'lobby') return null;
-  const existing = Array.from(game.players.values()).find(
-    (p) => p.nickname.toLowerCase() === nickname.toLowerCase()
-  );
-  if (existing) return null;
-  const player = { id: socketId, nickname, score: 0, streak: 0 };
+// Reconnect: find disconnected player by nickname, reassign to new socketId
+function reconnectPlayer(game, socketId, nickname) {
+  const nickLower = nickname.toLowerCase();
+  const player = game.nickToPlayer.get(nickLower);
+  if (!player) return null;
+  if (player.connected) return null; // already connected with another socket
+
+  // Remove old socketId mapping
+  game.players.delete(player.id);
+  // Also remove old socketId from answers if present (keep answer data)
+
+  // Update to new socketId
+  player.id = socketId;
+  player.connected = true;
   game.players.set(socketId, player);
   return player;
 }
 
-function removePlayer(game, socketId) {
-  game.players.delete(socketId);
+function getConnectedPlayers(game) {
+  return Array.from(game.players.values()).filter((p) => p.connected);
+}
+
+function getAllPlayers(game) {
+  return Array.from(game.players.values());
 }
 
 function getPlayerList(game) {
+  return Array.from(game.players.values()).map((p) => ({
+    nickname: p.nickname,
+    connected: p.connected,
+  }));
+}
+
+function getPlayerNicknames(game) {
   return Array.from(game.players.values()).map((p) => p.nickname);
 }
 
@@ -88,13 +109,13 @@ function submitAnswer(game, socketId, answerIndex) {
   if (game.state !== 'question') return null;
   if (game.answers.has(socketId)) return null;
   const player = game.players.get(socketId);
-  if (!player) return null;
+  if (!player || !player.connected) return null;
 
   const question = game.quiz.questions[game.currentQuestionIndex];
   const timeMs = Date.now() - game.questionStartTime;
   const timeLimitMs = question.timeLimit * 1000;
 
-  if (timeMs > timeLimitMs + 1000) return null;
+  if (timeMs > timeLimitMs + 2000) return null; // 2s grace for network lag
 
   game.answers.set(socketId, { playerId: socketId, answerIndex, timeMs });
 
@@ -124,12 +145,12 @@ function getQuestionResults(game) {
     correctIndex: question.correctIndex,
     answerCounts,
     totalAnswers: game.answers.size,
-    totalPlayers: game.players.size,
+    totalPlayers: getAllPlayers(game).length,
   };
 }
 
 function getLeaderboard(game) {
-  const players = Array.from(game.players.values());
+  const players = getAllPlayers(game);
   players.sort((a, b) => b.score - a.score);
   return players.map((p, i) => ({ nickname: p.nickname, score: p.score, rank: i + 1 }));
 }
@@ -145,6 +166,9 @@ app.prepare().then(() => {
 
   const io = new Server(httpServer, {
     cors: { origin: '*' },
+    pingInterval: 10000,   // ping every 10s (default 25s)
+    pingTimeout: 30000,    // wait 30s before considering disconnected (default 20s)
+    maxHttpBufferSize: 1e6,
   });
 
   io.on('connection', (socket) => {
@@ -163,7 +187,7 @@ app.prepare().then(() => {
       }
     });
 
-    // Player joins a game
+    // Player joins a game (lobby only, new player)
     socket.on('join-game', ({ pin, nickname }, callback) => {
       try {
         const game = getGameByPin(pin);
@@ -171,11 +195,46 @@ app.prepare().then(() => {
           callback({ success: false, error: 'Spill ikke funnet. Sjekk PIN-koden.' });
           return;
         }
+
+        // If game is in progress, try reconnect
         if (game.state !== 'lobby') {
-          callback({ success: false, error: 'Spillet har allerede startet.' });
+          const player = reconnectPlayer(game, socket.id, nickname);
+          if (player) {
+            socket.join(pin);
+            socketGameMap.set(socket.id, { pin, role: 'player' });
+            callback({ success: true, gameId: game.id, reconnected: true, state: game.state });
+
+            // Send current game state to reconnected player
+            if (game.state === 'question') {
+              const q = game.quiz.questions[game.currentQuestionIndex];
+              const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+              const remaining = Math.max(0, q.timeLimit - elapsed);
+              socket.emit('question', {
+                index: game.currentQuestionIndex,
+                total: game.quiz.questions.length,
+                question: q.question,
+                options: q.options,
+                timeLimit: remaining,
+              });
+            } else if (game.state === 'results') {
+              socket.emit('question-results', getQuestionResults(game));
+            } else if (game.state === 'leaderboard') {
+              socket.emit('leaderboard', { leaderboard: getLeaderboard(game) });
+            }
+
+            // Notify host of reconnection
+            io.to(pin).emit('player-joined', {
+              players: getPlayerNicknames(game),
+              count: getAllPlayers(game).length,
+            });
+            console.log(`Player "${nickname}" reconnected to game PIN=${pin}`);
+            return;
+          }
+          callback({ success: false, error: 'Spillet har allerede startet. Sjekk at du bruker samme kallenavn.' });
           return;
         }
-        const player = addPlayer(pin, socket.id, nickname);
+
+        const player = addPlayer(game, socket.id, nickname);
         if (!player) {
           callback({ success: false, error: 'Kallenavnet er allerede tatt.' });
           return;
@@ -187,7 +246,7 @@ app.prepare().then(() => {
 
         // Notify host
         io.to(pin).emit('player-joined', {
-          players: getPlayerList(game),
+          players: getPlayerNicknames(game),
           count: game.players.size,
         });
         console.log(`Player "${nickname}" joined game PIN=${pin}`);
@@ -212,13 +271,14 @@ app.prepare().then(() => {
       const hasNext = startNextQuestion(game);
       if (!hasNext) {
         game.state = 'finished';
-        io.to(mapping.pin).emit('game-over', { leaderboard: getLeaderboard(game) });
+        io.to(game.pin).emit('game-over', { leaderboard: getLeaderboard(game) });
         if (callback) callback({ success: true, finished: true });
         return;
       }
 
       const q = game.quiz.questions[game.currentQuestionIndex];
-      io.to(mapping.pin).emit('question', {
+      const gamePin = game.pin; // capture pin for timer closure
+      io.to(gamePin).emit('question', {
         index: game.currentQuestionIndex,
         total: game.quiz.questions.length,
         question: q.question,
@@ -232,11 +292,11 @@ app.prepare().then(() => {
         if (game.state === 'question') {
           game.state = 'results';
           const results = getQuestionResults(game);
-          io.to(mapping.pin).emit('question-results', results);
+          io.to(gamePin).emit('question-results', results);
 
-          // Also send individual results to players who didn't answer
+          // Send individual results to connected players who didn't answer
           for (const [sid, player] of game.players) {
-            if (!game.answers.has(sid)) {
+            if (!game.answers.has(sid) && player.connected) {
               io.to(sid).emit('answer-result', {
                 correct: false,
                 correctIndex: q.correctIndex,
@@ -275,18 +335,19 @@ app.prepare().then(() => {
       // Send result back to the player
       socket.emit('answer-result', result);
 
-      // Notify host of answer count
-      io.to(mapping.pin).emit('answer-count', {
+      // Notify host of answer count — count vs connected players
+      const connectedCount = getConnectedPlayers(game).length;
+      io.to(game.pin).emit('answer-count', {
         count: game.answers.size,
-        total: game.players.size,
+        total: connectedCount,
       });
 
-      // If all players have answered, auto-show results
-      if (game.answers.size >= game.players.size) {
+      // If all connected players have answered, auto-show results
+      if (game.answers.size >= connectedCount) {
         if (game.timers.questionTimer) clearTimeout(game.timers.questionTimer);
         game.state = 'results';
         const results = getQuestionResults(game);
-        io.to(mapping.pin).emit('question-results', results);
+        io.to(game.pin).emit('question-results', results);
       }
 
       if (callback) callback({ success: true });
@@ -301,21 +362,25 @@ app.prepare().then(() => {
 
       game.state = 'leaderboard';
       const leaderboard = getLeaderboard(game);
-      io.to(mapping.pin).emit('leaderboard', { leaderboard });
+      io.to(game.pin).emit('leaderboard', { leaderboard });
       if (callback) callback({ success: true });
     });
 
-    // Disconnect
+    // Disconnect — mark player as disconnected, don't remove
     socket.on('disconnect', () => {
       const mapping = socketGameMap.get(socket.id);
       if (mapping) {
         const game = getGameByPin(mapping.pin);
         if (game) {
           if (mapping.role === 'player') {
-            removePlayer(game, socket.id);
+            const player = game.players.get(socket.id);
+            if (player) {
+              player.connected = false;
+              console.log(`Player "${player.nickname}" disconnected from PIN=${mapping.pin} (kept in game)`);
+            }
             io.to(mapping.pin).emit('player-joined', {
-              players: getPlayerList(game),
-              count: game.players.size,
+              players: getPlayerNicknames(game),
+              count: getAllPlayers(game).length,
             });
           }
         }
