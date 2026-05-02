@@ -76,19 +76,19 @@ export default function LibraryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#46178f]">
+    <div className="min-h-screen bg-sw-gradient">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => router.push('/')}
-            className="text-white/70 hover:text-white transition-colors text-sm"
+            className="text-slate-400 hover:text-white transition-colors text-sm"
           >
             ← Tilbake
           </button>
           <h1 className="text-2xl font-bold text-white">Mine Quizzer</h1>
           <button
             onClick={() => router.push('/create')}
-            className="text-sm bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors"
+            className="text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 px-4 py-2 rounded-lg transition-colors"
           >
             + Ny quiz
           </button>
@@ -96,16 +96,16 @@ export default function LibraryPage() {
 
         {loading ? (
           <div className="text-center py-16">
-            <div className="text-white/60 text-lg">Laster quizzer...</div>
+            <div className="text-slate-400 text-lg">Laster quizzer...</div>
           </div>
         ) : quizzes.length === 0 ? (
           <div className="text-center py-16 animate-fade-in-up">
             <div className="text-6xl mb-4">📚</div>
             <h2 className="text-2xl font-bold text-white mb-2">Ingen lagrede quizzer</h2>
-            <p className="text-white/60 mb-6">Opprett din første quiz for å komme i gang!</p>
+            <p className="text-slate-400 mb-6">Opprett din første quiz for å komme i gang!</p>
             <button
               onClick={() => router.push('/create')}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors"
+              className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors"
             >
               Opprett quiz
             </button>
@@ -115,13 +115,13 @@ export default function LibraryPage() {
             {quizzes.map((quiz, i) => (
               <div
                 key={quiz.id}
-                className="bg-white rounded-xl shadow-lg p-5 animate-fade-in-up"
+                className="bg-white/5 border border-white/10 rounded-xl p-5 animate-fade-in-up"
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-gray-800 truncate">{quiz.title}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <h3 className="text-lg font-bold text-white truncate">{quiz.title}</h3>
+                    <p className="text-sm text-slate-400 mt-1">
                       {quiz.questions.length} spørsmål · Oppdatert {formatDate(quiz.updatedAt)}
                     </p>
                   </div>
@@ -129,7 +129,7 @@ export default function LibraryPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => router.push(`/create?edit=${quiz.id}`)}
-                      className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors font-medium"
+                      className="text-sm bg-white/10 hover:bg-white/15 text-slate-200 px-3 py-2 rounded-lg transition-colors font-medium"
                     >
                       Rediger
                     </button>
@@ -138,13 +138,13 @@ export default function LibraryPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => handleDelete(quiz.id)}
-                          className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg transition-colors font-medium"
+                          className="text-sm bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-lg transition-colors font-medium"
                         >
                           Slett
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(null)}
-                          className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg transition-colors font-medium"
+                          className="text-sm bg-white/10 hover:bg-white/15 text-slate-200 px-3 py-2 rounded-lg transition-colors font-medium"
                         >
                           Avbryt
                         </button>
@@ -152,7 +152,7 @@ export default function LibraryPage() {
                     ) : (
                       <button
                         onClick={() => setDeleteConfirm(quiz.id)}
-                        className="text-sm text-red-400 hover:text-red-600 px-2 py-2 transition-colors"
+                        className="text-sm text-rose-400 hover:text-rose-300 px-2 py-2 transition-colors"
                         title="Slett quiz"
                       >
                         🗑
@@ -162,7 +162,7 @@ export default function LibraryPage() {
                     <button
                       onClick={() => handlePlay(quiz)}
                       disabled={startingId === quiz.id}
-                      className="text-sm bg-green-500 hover:bg-green-600 disabled:bg-green-800 text-white px-4 py-2 rounded-lg transition-colors font-bold"
+                      className="text-sm bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors font-bold"
                     >
                       {startingId === quiz.id ? 'Starter...' : 'Spill ▶'}
                     </button>

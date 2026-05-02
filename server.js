@@ -451,6 +451,6 @@ app.prepare().then(() => {
   });
 
   httpServer.listen(port, hostname, () => {
-    console.log(`> kaWhat ready on http://${hostname}:${port}`);
+    console.log(`> SayWhat ready on http://${hostname}:${port}`);
   });
 });

@@ -22,7 +22,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#46178f] px-4 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-sw-gradient px-4 relative">
       {/* Auth corner */}
       <div className="absolute top-4 right-4 animate-fade-in-up">
         {status === 'loading' ? null : session ? (
@@ -33,15 +33,15 @@ export default function Home() {
                 alt=""
                 width={32}
                 height={32}
-                className="rounded-full border-2 border-white/30"
+                className="rounded-full ring-2 ring-indigo-400/30"
               />
             )}
-            <span className="text-white/80 text-sm hidden sm:inline">
+            <span className="text-slate-300 text-sm hidden sm:inline">
               {session.user?.name}
             </span>
             <button
               onClick={() => signOut({ callbackUrl: '/' })}
-              className="text-white/50 hover:text-white text-sm transition-colors"
+              className="text-slate-500 hover:text-white text-sm transition-colors"
             >
               Logg ut
             </button>
@@ -49,7 +49,7 @@ export default function Home() {
         ) : (
           <button
             onClick={() => router.push('/login')}
-            className="text-white/70 hover:text-white text-sm transition-colors bg-white/10 px-4 py-2 rounded-lg"
+            className="text-slate-400 hover:text-white text-sm transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10"
           >
             Logg inn
           </button>
@@ -57,15 +57,15 @@ export default function Home() {
       </div>
 
       <div className="animate-fade-in-up text-center mb-12">
-        <h1 className="text-6xl sm:text-8xl font-extrabold text-white tracking-tight mb-2">
-          ka<span className="text-yellow-300">What</span>
+        <h1 className="text-6xl sm:text-8xl font-black text-white tracking-tight mb-3">
+          say<span className="text-cyan-400">what</span>
         </h1>
-        <p className="text-white/70 text-lg">Lag og spill quizzer i sanntid</p>
+        <p className="text-slate-400 text-lg">Lag og spill quizzer i sanntid</p>
       </div>
 
       <div className="w-full max-w-sm animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-        <form onSubmit={handleJoin} className="bg-white rounded-lg shadow-2xl p-6 mb-6">
-          <h2 className="text-center text-gray-700 font-bold text-lg mb-4">Bli med i et spill</h2>
+        <form onSubmit={handleJoin} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 mb-6">
+          <h2 className="text-center text-slate-300 font-semibold text-lg mb-4">Bli med i et spill</h2>
           <input
             type="text"
             inputMode="numeric"
@@ -73,15 +73,15 @@ export default function Home() {
             placeholder="Game PIN"
             value={pin}
             onChange={(e) => { setPin(e.target.value); setError(''); }}
-            className="w-full text-center text-2xl font-bold py-3 px-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#46178f] transition-colors mb-3"
+            className="w-full text-center text-2xl font-bold py-3 px-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-all mb-3"
             maxLength={6}
           />
-          {error && <p className="text-red-500 text-sm text-center mb-2">{error}</p>}
+          {error && <p className="text-rose-400 text-sm text-center mb-2">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-[#333] hover:bg-black text-white font-bold py-3 rounded-lg text-lg transition-colors"
+            className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl text-lg transition-colors"
           >
-            Bli med!
+            Bli med
           </button>
         </form>
       </div>
@@ -89,22 +89,22 @@ export default function Home() {
       <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
         <button
           onClick={() => router.push('/create')}
-          className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors border-2 border-white/30"
+          className="bg-white/5 hover:bg-white/10 text-slate-200 font-semibold py-3 px-8 rounded-xl text-lg transition-colors border border-white/10 hover:border-white/20"
         >
-          Opprett ny quiz
+          Opprett quiz
         </button>
         <button
           onClick={() => router.push('/explore')}
-          className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors border-2 border-white/30"
+          className="bg-white/5 hover:bg-white/10 text-slate-200 font-semibold py-3 px-8 rounded-xl text-lg transition-colors border border-white/10 hover:border-white/20"
         >
-          Utforsk quizzer 🌍
+          Utforsk
         </button>
         {session && (
           <button
             onClick={() => router.push('/library')}
-            className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors border-2 border-white/30"
+            className="bg-white/5 hover:bg-white/10 text-slate-200 font-semibold py-3 px-8 rounded-xl text-lg transition-colors border border-white/10 hover:border-white/20"
           >
-            Mine quizzer 📚
+            Mine quizzer
           </button>
         )}
       </div>
