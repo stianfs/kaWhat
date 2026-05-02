@@ -180,6 +180,9 @@ app.prepare().then(() => {
     const pubClient = createClient({ url: process.env.REDIS_URL });
     const subClient = pubClient.duplicate();
 
+    pubClient.on('error', (err) => console.error('Redis pub client error:', err));
+    subClient.on('error', (err) => console.error('Redis sub client error:', err));
+
     Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
       io.adapter(createAdapter(pubClient, subClient));
       console.log('Socket.io Redis adapter initialized');
